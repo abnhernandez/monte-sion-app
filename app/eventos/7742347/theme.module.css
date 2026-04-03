@@ -1,0 +1,33 @@
+.eventTheme {
+  --background: oklch(0.20 0.015 155);
+  --foreground: oklch(0.95 0.01 90);
+  --primary: oklch(0.80 0.10 85);
+  --primary-foreground: oklch(0.20 0.015 155);
+  --muted-foreground: oklch(0.70 0.015 90);
+  --border: oklch(0.28 0.015 155);
+
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+.eventTheme :global(main) {
+  background-color: var(--background);
+}
+
+.eventTheme :global(.font-serif) {
+  font-family: var(--font-event-serif), "DM Serif Display", Georgia, serif;
+}
+
+.eventTheme :global(.animate-fire) {
+  animation: eventFirePulse 3s ease-in-out infinite;
+}
+
+@keyframes eventFirePulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 rgba(249, 115, 22, 0));
+  }
+  50% {
+    filter: drop-shadow(0 0 10px rgba(249, 115, 22, 0.35));
+  }
+}
