@@ -1,5 +1,4 @@
 export const campRoles = ["participant", "leader", "server", "guest"] as const;
-export const legalGenderOptions = ["H", "M"] as const;
 export const campAttendanceOptions = ["yes", "no", "maybe"] as const;
 export const guardianRelationships = [
   "Padre",
@@ -11,7 +10,6 @@ export const guardianRelationships = [
 export const campStepIds = ["personal", "contact", "guardian", "confirm"] as const;
 
 export type CampRole = (typeof campRoles)[number];
-export type LegalGender = (typeof legalGenderOptions)[number];
 export type CampAttendanceOption = (typeof campAttendanceOptions)[number];
 export type GuardianRelationship = (typeof guardianRelationships)[number];
 export type CampStepId = (typeof campStepIds)[number];
@@ -26,18 +24,14 @@ export type CampStepDefinition = {
 export type CampRegistrationFormValues = {
   firstName: string;
   lastName: string;
-  birthDate: string;
   curp: string;
-  gender: LegalGender | "";
   attendanceConfirmation: CampAttendanceOption | "";
   needsTransport: boolean | null;
   interestedInBaptism: boolean | null;
   churchName: string;
-  city: string;
   campRole: CampRole | "";
   hasAllergies: boolean | null;
   allergiesDetails: string;
-  email: string;
   phone: string;
   emergencyName: string;
   emergencyPhone: string;
@@ -57,7 +51,6 @@ export type CampRegistrationPayload = Omit<
   CampRegistrationFormValues,
   "guardianIdFile"
 > & {
-  age: number;
   isMinor: boolean;
   guardianIdFile: File | null;
 };
@@ -72,20 +65,15 @@ export type CampRegistrationRecord = {
   createdAt: string;
   firstName: string;
   lastName: string;
-  birthDate: string;
-  age: number;
   isMinor: boolean;
   curp: string;
-  gender: LegalGender;
   attendanceConfirmation: CampAttendanceOption;
   needsTransport: boolean;
   interestedInBaptism: boolean;
   churchName: string;
-  city: string;
   campRole: CampRole;
   hasAllergies: boolean;
   allergiesDetails: string;
-  email: string;
   phone: string;
   emergencyName: string;
   emergencyPhone: string;
@@ -113,9 +101,7 @@ export type CampTicketViewModel = {
   eventName: string;
   eventDateLabel: string;
   location: string;
-  city: string;
   churchName: string;
-  email: string;
   phone: string;
   createdAtLabel: string;
 };

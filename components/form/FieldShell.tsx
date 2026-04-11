@@ -25,7 +25,7 @@ export default function FieldShell({
   children,
 }: FieldShellProps) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-3">
         {htmlFor ? (
           <label htmlFor={htmlFor} className="text-sm font-semibold text-foreground/90">
@@ -46,7 +46,7 @@ export default function FieldShell({
         ) : null}
       </div>
       {children}
-      <div className="min-h-5">
+      <div className="min-h-4">
         {error ? (
           <p id={errorId} className="inline-flex items-center gap-1 text-xs text-destructive">
             <AlertCircle className="h-3.5 w-3.5" />

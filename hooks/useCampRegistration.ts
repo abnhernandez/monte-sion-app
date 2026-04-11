@@ -14,7 +14,6 @@ import type {
   CampRegistrationFormValues,
   CampStepId,
 } from "@/lib/camp/types";
-import { isMinorFromBirthDate } from "@/lib/camp/utils";
 
 const stepFields: Record<
   CampStepId,
@@ -23,14 +22,11 @@ const stepFields: Record<
   personal: [
     "firstName",
     "lastName",
-    "birthDate",
-    "gender",
     "needsTransport",
     "interestedInBaptism",
     "churchName",
-    "city",
   ],
-  contact: ["email", "phone"],
+  contact: ["phone"],
   guardian: [],
   confirm: ["termsAccepted"],
 };
@@ -73,7 +69,7 @@ export function useCampRegistration(
 
   const values = methods.getValues();
   const deferredValues = useDeferredValue(values);
-  const isMinor = isMinorFromBirthDate(values.birthDate);
+  const isMinor = false;
   const activeStep = currentStep;
   const steps = campStepDefinitions;
   const currentIndex = Math.max(
@@ -110,6 +106,7 @@ export function useCampRegistration(
         shouldValidate: false,
       });
     }
+
   }, [methods]);
 
   const currentStepFields = stepFields[activeStep].filter((field) => {

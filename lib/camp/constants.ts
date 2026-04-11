@@ -33,35 +33,35 @@ export const CAMP_EVENT = {
 } as const;
 
 export const CAMP_PAGE_CONTENT = {
-  badge: "Campamento cristiano 2026",
+  badge: "Registro esencial",
   heroTitle: CAMP_EVENT.fullTitle,
   heroDescription:
-    "Una experiencia premium de fe, comunidad y naturaleza organizada por {{organizer}}. Regístrate en minutos, genera tu ticket con QR y prepárate para vivir algo profundo.",
-  sectionEyebrow: "Lo que vivirás",
-  sectionTitle: "Registro claro para una experiencia bien cuidada",
+    "Solo lo necesario para registrar tu asistencia.",
+  sectionEyebrow: "Datos esenciales",
+  sectionTitle: "Registro rápido y directo",
   sectionDescription:
-    "Diseñamos el flujo de inscripción para que la logística sea confiable desde el primer momento: validación de CURP, contacto de emergencia, responsiva automatizada y ticket premium con QR.",
+    "Nombre, apellidos, iglesia y teléfono. Nada más.",
 } as const;
 
 export const CAMP_DETAIL_CARDS = [
   {
     title: "Fechas",
-    body: `${CAMP_EVENT.dateLabel}. Un encuentro diseñado para vivir en comunidad.`,
+    body: `${CAMP_EVENT.dateLabel} | 10:00 AM (GMT-6).`,
     icon: "calendar",
   },
   {
     title: "Ubicación",
-    body: "Bosque Nido del Aguila, Miahuatlan, Oaxaca. Un entorno natural para descansar y escuchar.",
+    body: "Rancho Leche & Miel by UCTEM Universidad, Calle 2 de Abril, San Sebastián Abasolo, 70407, Oaxaca, México.",
     icon: "mapPin",
   },
   {
     title: "Experiencia",
-    body: "Plenarias, fogata, tiempos de oración, dinámicas de integración y retos al aire libre.",
+    body: "Bautizos + servicio general.",
     icon: "tentTree",
   },
   {
     title: "Cuidado",
-    body: "Control de alergias, registro con QR, carta responsiva y check-in administrado por líderes.",
+    body: "Ticket con QR y acceso ágil.",
     icon: "shieldCheck",
   },
 ] as const;
@@ -115,18 +115,14 @@ export const campStepDefinitions: CampStepDefinition[] = [
 export const campRegistrationDefaults: CampRegistrationFormValues = {
   firstName: "",
   lastName: "",
-  birthDate: "",
   curp: "",
-  gender: "",
   attendanceConfirmation: "yes",
   needsTransport: null,
   interestedInBaptism: null,
   churchName: "",
-  city: "",
   campRole: "participant",
   hasAllergies: null,
   allergiesDetails: "",
-  email: "",
   phone: "",
   emergencyName: "No especificado",
   emergencyPhone: "0000000000",

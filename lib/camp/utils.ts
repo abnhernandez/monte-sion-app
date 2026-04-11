@@ -3,7 +3,6 @@ import type {
   CampRegistrationPayload,
   CampRegistrationRecord,
   CampRole,
-  LegalGender,
 } from "@/lib/camp/types";
 import { CAMP_EVENT } from "@/lib/camp/constants";
 
@@ -156,10 +155,6 @@ export function formatRoleLabel(role: CampRole) {
   return labels[role];
 }
 
-export function formatGenderLabel(gender: LegalGender) {
-  return gender === "H" ? "Hombre" : "Mujer";
-}
-
 export function formatHumanDate(value: string) {
   return new Intl.DateTimeFormat("es-MX", {
     dateStyle: "long",
@@ -241,27 +236,23 @@ export function humanFileSize(size: number) {
 export function normalizeCampRegistration(
   values: CampRegistrationFormValues
 ): CampRegistrationPayload {
-  const age = getAgeFromBirthDate(values.birthDate) ?? 0;
-  const isMinor = age < 18;
+  const isMinor = false;
 
   return {
     ...values,
     firstName: normalizeWhitespace(values.firstName),
     lastName: normalizeWhitespace(values.lastName),
     curp: normalizeCurp(values.curp),
-    gender: values.gender as CampRegistrationPayload["gender"],
     attendanceConfirmation:
       values.attendanceConfirmation as CampRegistrationPayload["attendanceConfirmation"],
     needsTransport: Boolean(values.needsTransport),
     interestedInBaptism: Boolean(values.interestedInBaptism),
     churchName: normalizeWhitespace(values.churchName),
-    city: normalizeWhitespace(values.city),
     campRole: values.campRole as CampRegistrationPayload["campRole"],
     hasAllergies: values.hasAllergies === true,
     allergiesDetails: values.hasAllergies
       ? normalizeWhitespace(values.allergiesDetails)
       : "",
-    email: values.email.trim().toLowerCase(),
     phone: normalizeMexicanPhone(values.phone),
     emergencyName: normalizeWhitespace(values.emergencyName),
     emergencyPhone: normalizeMexicanPhone(values.emergencyPhone),
@@ -274,7 +265,6 @@ export function normalizeCampRegistration(
     guardianEmail: isMinor ? values.guardianEmail.trim().toLowerCase() : "",
     guardianSignatureDataUrl: isMinor ? values.guardianSignatureDataUrl : "",
     guardianIdFile: isMinor ? values.guardianIdFile : null,
-    age,
     isMinor,
   };
 }
@@ -285,10 +275,8 @@ export function summarizeRegistrationForSearch(
   return [
     registration.ticketId,
     buildFullName(registration.firstName, registration.lastName),
-    registration.email,
     registration.phone,
     registration.churchName,
-    registration.city,
   ]
     .join(" ")
     .toLowerCase();

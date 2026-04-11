@@ -41,7 +41,7 @@ export function getInputClasses({
   className?: string;
 }) {
   return cn(
-    "w-full rounded-2xl border border-white/12 bg-[#18181a] px-4 py-3 text-sm text-foreground outline-none transition duration-200 placeholder:text-muted-foreground/80",
+    "w-full rounded-xl border border-white/10 bg-[#18181a] px-3.5 py-2.5 text-sm text-foreground outline-none transition duration-200 placeholder:text-muted-foreground/80",
     "focus:border-white/25 focus:ring-2 focus:ring-white/10",
     invalid
       ? "border-destructive/60 bg-destructive/10"

@@ -129,44 +129,24 @@ export default function MultiStepForm({
   return (
     <section
       id="registro"
-      className="space-y-6 rounded-[2rem] border border-white/10 bg-[#0f0f10] p-5 text-foreground shadow-2xl md:p-6"
+      className="text-foreground"
     >
-      <div className="space-y-6">
+      <div className="py-2 md:py-3">
         {result ? (
           <Success result={result} onReset={handleResetFlow} />
         ) : (
           <FormProvider {...methods}>
             <>
-              <form onSubmit={submit} className="space-y-5">
-                <header className="space-y-3 rounded-2xl bg-[#151516] p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary/80">
-                    Registro Campamento Monte Sion
-                  </p>
-                  <h2 className="mt-3 text-2xl font-semibold text-foreground md:text-3xl">
-                    Formulario de registro
-                  </h2>
-                  <p className="text-sm leading-6 text-muted-foreground">
-                    Completa tu registro en un solo formulario, sin pasos extra.
-                  </p>
-                </header>
-
-                <section className="space-y-4 rounded-[1.5rem] bg-[#151516] p-4 md:p-5">
-                  <div className="space-y-1">
-                    <h3 className="text-base font-semibold text-foreground">Datos personales</h3>
-                    <p className="text-sm text-muted-foreground">Te tomará menos de 1 minuto completar este registro.</p>
-                  </div>
+              <form onSubmit={submit} className="space-y-3">
+                <section className="space-y-3">
                   <Step1 />
                 </section>
 
-                <section className="space-y-4 rounded-[1.5rem] bg-[#151516] p-4 md:p-5">
-                  <div className="space-y-1">
-                    <h3 className="text-base font-semibold text-foreground">Contacto</h3>
-                    <p className="text-sm text-muted-foreground">Solo usaremos esta información para comunicarnos contigo.</p>
-                  </div>
+                <section className="space-y-3">
                   <Step2 />
                 </section>
 
-                <label className="flex items-start gap-3 rounded-[1.25rem] bg-[#151516] p-4">
+                <label className="flex items-start gap-3 rounded-xl bg-white/[0.03] p-3">
                   <input
                     {...methods.register("termsAccepted")}
                     type="checkbox"
@@ -184,16 +164,16 @@ export default function MultiStepForm({
                 ) : null}
 
                 {serverError ? (
-                  <div className="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                  <div className="rounded-xl bg-destructive/10 px-3.5 py-2.5 text-sm text-destructive">
                     {serverError}
                   </div>
                 ) : null}
 
-                <div className="pt-1">
+                <div className="flex flex-col gap-3 sm:flex-row">
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="inline-flex w-full items-center justify-center rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-45"
+                    className="inline-flex flex-1 items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-45"
                   >
                     {isSubmitting ? "Confirmando..." : "Confirmar registro"}
                   </button>

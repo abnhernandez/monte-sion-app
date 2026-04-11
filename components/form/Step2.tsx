@@ -13,7 +13,6 @@ import {
 export default function Step2() {
   const methods = useFormContext<CampRegistrationFormValues>();
 
-  const emailFeedback = getFieldFeedback(methods, "email");
   const phoneFeedback = getFieldFeedback(methods, "phone");
   const firstName = methods.watch("firstName");
   const lastName = methods.watch("lastName");
@@ -41,26 +40,8 @@ export default function Step2() {
   }, [firstName, lastName, methods, phone]);
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4">
-        <FieldShell
-          label="Correo electrónico"
-          required
-          htmlFor="camp-email"
-          error={emailFeedback.error}
-          valid={emailFeedback.valid}
-        >
-          <input
-            {...methods.register("email")}
-            id="camp-email"
-            aria-invalid={emailFeedback.invalid ? "true" : "false"}
-            type="email"
-            placeholder="tu.nombre@email.com"
-            autoComplete="email"
-            className={getInputClasses(emailFeedback)}
-          />
-        </FieldShell>
-
+    <div className="space-y-4">
+      <div className="grid gap-3">
         <FieldShell
           label="Número de contacto"
           required
@@ -80,8 +61,8 @@ export default function Step2() {
           />
         </FieldShell>
 
-        <p className="rounded-xl bg-muted/20 px-4 py-3 text-sm leading-6 text-muted-foreground ring-1 ring-black/5">
-          El contacto de emergencia se genera automáticamente con tu nombre y teléfono principal.
+        <p className="rounded-xl bg-muted/15 px-3.5 py-2.5 text-sm leading-5 text-muted-foreground ring-1 ring-black/5">
+          Se genera el contacto de emergencia.
         </p>
       </div>
     </div>

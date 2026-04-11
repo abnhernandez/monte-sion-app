@@ -20,20 +20,15 @@ type CampRegistrationRow = {
   created_at: string;
   first_name: string;
   last_name: string;
-  birth_date: string;
-  age: number;
   is_minor: boolean;
   curp: string;
-  gender: "H" | "M";
   attendance_confirmation: CampRegistrationRecord["attendanceConfirmation"];
   needs_transport: boolean;
   interested_in_baptism: boolean;
   church_name: string;
-  city: string;
   camp_role: CampRegistrationRecord["campRole"];
   has_allergies: boolean;
   allergies_details: string;
-  email: string;
   phone: string;
   emergency_name: string;
   emergency_phone: string;
@@ -60,20 +55,15 @@ function mapCampRow(row: CampRegistrationRow): CampRegistrationRecord {
     createdAt: row.created_at,
     firstName: row.first_name,
     lastName: row.last_name,
-    birthDate: row.birth_date,
-    age: row.age,
     isMinor: row.is_minor,
     curp: row.curp,
-    gender: row.gender,
     attendanceConfirmation: row.attendance_confirmation,
     needsTransport: row.needs_transport,
     interestedInBaptism: row.interested_in_baptism,
     churchName: row.church_name,
-    city: row.city,
     campRole: row.camp_role,
     hasAllergies: row.has_allergies,
     allergiesDetails: row.allergies_details,
-    email: row.email,
     phone: row.phone,
     emergencyName: row.emergency_name,
     emergencyPhone: row.emergency_phone,
@@ -124,20 +114,20 @@ export async function createCampRegistration(payload: CampRegistrationPayload) {
     status: "registered" as const,
     first_name: payload.firstName,
     last_name: payload.lastName,
-    birth_date: payload.birthDate,
-    age: payload.age,
+    birth_date: "2000-01-01",
+    age: 0,
     is_minor: payload.isMinor,
     curp: payload.curp,
-    gender: payload.gender,
+    gender: "H",
     attendance_confirmation: payload.attendanceConfirmation,
     needs_transport: payload.needsTransport,
     interested_in_baptism: payload.interestedInBaptism,
     church_name: payload.churchName,
-    city: payload.city,
+    city: "No especificada",
     camp_role: payload.campRole,
     has_allergies: payload.hasAllergies,
     allergies_details: payload.allergiesDetails,
-    email: payload.email,
+    email: `sin-correo+${ticketId.toLowerCase()}@camp.local`,
     phone: payload.phone,
     emergency_name: payload.emergencyName,
     emergency_phone: payload.emergencyPhone,

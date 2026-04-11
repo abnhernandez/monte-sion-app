@@ -16,39 +16,27 @@ export default function CampTicketCard({ ticket }: CampTicketCardProps) {
           <div className="relative">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#d9b65d]">
-                  Campamento Monte Sion 2026
-                </p>
                 <h3 className="mt-3 text-3xl font-semibold text-white">
                   {ticket.attendeeName}
                 </h3>
-                <p className="mt-2 text-sm text-white/60">{ticket.roleLabel}</p>
+                <p className="mt-2 text-sm text-white/65">Registro confirmado</p>
               </div>
               <div className="rounded-full border border-emerald-400/25 bg-emerald-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-200">
                 {ticket.checkedInAt ? "Check-in realizado" : "Listo para acceso"}
               </div>
             </div>
 
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/45">
-                  Ticket ID
-                </p>
-                <div className="mt-3 flex items-center gap-3 text-lg font-semibold text-white">
-                  <Ticket className="h-5 w-5 text-[#d9b65d]" />
-                  {ticket.ticketId}
-                </div>
-              </div>
-
-              <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/45">
-                  Emitido
-                </p>
-                <p className="mt-3 text-sm text-white/85">{ticket.createdAtLabel}</p>
+            <div className="mt-8 rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/45">
+                Ticket ID
+              </p>
+              <div className="mt-3 flex items-center gap-3 text-lg font-semibold text-white">
+                <Ticket className="h-5 w-5 text-[#d9b65d]" />
+                {ticket.ticketId}
               </div>
             </div>
 
-            <div className="mt-8 space-y-4 rounded-[1.75rem] border border-white/10 bg-black/15 p-5">
+            <div className="mt-6 space-y-3 rounded-[1.5rem] border border-white/10 bg-black/15 p-4">
               <div className="flex items-center gap-3 text-sm text-white/80">
                 <CalendarDays className="h-4 w-4 text-[#d9b65d]" />
                 {ticket.eventDateLabel}
@@ -59,13 +47,11 @@ export default function CampTicketCard({ ticket }: CampTicketCardProps) {
               </div>
               <div className="flex items-center gap-3 text-sm text-white/80">
                 <ShieldCheck className="h-4 w-4 text-[#d9b65d]" />
-                {ticket.isMinor
-                  ? "Incluye carta responsiva descargable."
-                  : "Registro completo para mayor de edad."}
+                {ticket.isMinor ? "Carta responsiva disponible." : "Registro general."}
               </div>
             </div>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-wrap gap-3">
               <Link
                 href={ticket.ticketUrl}
                 className="rounded-full bg-[#d9b65d] px-5 py-3 text-sm font-semibold text-[#102116] transition hover:brightness-105"

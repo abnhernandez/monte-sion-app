@@ -73,7 +73,7 @@ export default function CampAdminDashboard({
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Buscar por ticket, nombre, correo o iglesia"
+            placeholder="Buscar por ticket, nombre, telefono o iglesia"
             className="w-full rounded-full border border-white/10 bg-white/5 py-3 pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#d9b65d]/50"
           />
         </label>
@@ -131,7 +131,6 @@ export default function CampAdminDashboard({
                 </div>
 
                 <div className="grid gap-3 text-sm text-white/70 md:grid-cols-2">
-                  <p>{registration.email}</p>
                   <p>{formatPhoneForDisplay(registration.phone)}</p>
                   <p>{registration.churchName}</p>
                   <p>{formatRoleLabel(registration.campRole)}</p>

@@ -4,11 +4,9 @@ import {
   campAttendanceOptions,
   campRoles,
   guardianRelationships,
-  legalGenderOptions,
   type CampRegistrationFormValues,
 } from "@/lib/camp/types";
 import {
-  getAgeFromBirthDate,
   isValidMexicanPhone,
   validateMexicanCurp,
 } from "@/lib/camp/utils";
@@ -33,9 +31,7 @@ export const campRegistrationSchema: z.ZodType<CampRegistrationFormValues> = z
       .string()
       .trim()
       .min(2, "Ingresa los apellidos del asistente."),
-    birthDate: z.string().min(1, "Selecciona la fecha de nacimiento."),
     curp: z.string().trim(),
-    gender: z.union([z.literal(""), z.enum(legalGenderOptions)]),
     attendanceConfirmation: z.union([
       z.literal(""),
       z.enum(campAttendanceOptions),
@@ -46,17 +42,9 @@ export const campRegistrationSchema: z.ZodType<CampRegistrationFormValues> = z
       .string()
       .trim()
       .min(3, "Indica la iglesia o comunidad del asistente."),
-    city: z
-      .string()
-      .trim()
-      .min(3, "Indica la ciudad o lugar de procedencia."),
     campRole: z.union([z.literal(""), z.enum(campRoles)]),
     hasAllergies: z.union([z.boolean(), z.null()]),
     allergiesDetails: z.string().trim(),
-    email: z
-      .string()
-      .trim()
-      .email("Ingresa un correo electronico valido."),
     phone: z
       .string()
       .trim()
@@ -78,24 +66,6 @@ export const campRegistrationSchema: z.ZodType<CampRegistrationFormValues> = z
     termsAccepted: z.boolean(),
   })
   .superRefine((data, context) => {
-    const age = getAgeFromBirthDate(data.birthDate);
-
-    if (age === null || age < 5 || age > 99) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["birthDate"],
-        message: "Ingresa una fecha de nacimiento valida.",
-      });
-    }
-
-    if (!data.gender) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["gender"],
-        message: "Selecciona el sexo legal del asistente.",
-      });
-    }
-
     const attendsCamp = data.attendanceConfirmation !== "no";
 
     if (attendsCamp && data.needsTransport === null) {
@@ -152,9 +122,7 @@ export function parseCampRegistrationFormData(
   return {
     firstName: getString("firstName"),
     lastName: getString("lastName"),
-    birthDate: getString("birthDate"),
     curp: getString("curp"),
-    gender: getString("gender") as CampRegistrationFormValues["gender"],
     attendanceConfirmation: getString(
       "attendanceConfirmation"
     ) as CampRegistrationFormValues["attendanceConfirmation"],
@@ -167,14 +135,12 @@ export function parseCampRegistrationFormData(
         ? null
         : getString("interestedInBaptism") === "true",
     churchName: getString("churchName"),
-    city: getString("city"),
     campRole: getString("campRole") as CampRegistrationFormValues["campRole"],
     hasAllergies:
       getString("hasAllergies") === ""
         ? null
         : getString("hasAllergies") === "true",
     allergiesDetails: getString("allergiesDetails"),
-    email: getString("email"),
     phone: getString("phone"),
     emergencyName: getString("emergencyName"),
     emergencyPhone: getString("emergencyPhone"),

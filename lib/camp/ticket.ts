@@ -34,9 +34,7 @@ export async function buildCampTicketViewModel(
     eventName: `${CAMP_EVENT.name} - ${CAMP_EVENT.theme}`,
     eventDateLabel: CAMP_EVENT.dateLabel,
     location: CAMP_EVENT.location,
-    city: registration.city,
     churchName: registration.churchName,
-    email: registration.email,
     phone: formatPhoneForDisplay(registration.phone),
     createdAtLabel: formatHumanDateTime(registration.createdAt),
   };

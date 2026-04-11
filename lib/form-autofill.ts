@@ -46,11 +46,8 @@ export function buildCampRegistrationAutofill(
   return {
     firstName,
     lastName,
-    birthDate: profile.birthday?.birthDate ?? "",
-    email: profile.email ?? "",
     phone: profile.phone ?? "",
     churchName: profile.autofill.churchName,
-    city: profile.autofill.city,
     campRole: profile.autofill.campRole,
     emergencyName: profile.autofill.emergencyName,
     emergencyPhone: profile.autofill.emergencyPhone,

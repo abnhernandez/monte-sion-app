@@ -2,11 +2,7 @@
 
 import { useFormContext } from "react-hook-form";
 import type { CampRegistrationFormValues } from "@/lib/camp/types";
-import {
-  formatHumanDate,
-  formatPhoneForDisplay,
-  getAgeFromBirthDate,
-} from "@/lib/camp/utils";
+import { formatPhoneForDisplay } from "@/lib/camp/utils";
 
 type Step4Props = {
   deferredValues: CampRegistrationFormValues;
@@ -20,7 +16,6 @@ export default function Step4({
   onEditContact = () => {},
 }: Step4Props) {
   const methods = useFormContext<CampRegistrationFormValues>();
-  const age = getAgeFromBirthDate(deferredValues.birthDate);
 
   return (
     <div className="space-y-6">
@@ -40,10 +35,7 @@ export default function Step4({
           </div>
           <div className="space-y-2 text-sm text-muted-foreground">
             <p>{`${deferredValues.firstName} ${deferredValues.lastName}`.trim() || "—"}</p>
-            <p>{deferredValues.birthDate ? formatHumanDate(deferredValues.birthDate) : "—"}</p>
-            <p>{age !== null ? `Edad: ${age} años` : "Edad: pendiente"}</p>
             <p>{deferredValues.churchName || "—"}</p>
-            <p>{deferredValues.city || "—"}</p>
             <p>Transporte: {deferredValues.needsTransport ? "Sí" : "No"}</p>
             <p>Bautismo: {deferredValues.interestedInBaptism ? "Sí" : "No"}</p>
           </div>
@@ -61,7 +53,6 @@ export default function Step4({
             </button>
           </div>
           <div className="space-y-2 text-sm text-muted-foreground">
-            <p>{deferredValues.email || "—"}</p>
             <p>{deferredValues.phone ? formatPhoneForDisplay(deferredValues.phone) : "—"}</p>
             <p>Contacto de emergencia autogenerado.</p>
           </div>
