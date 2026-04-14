@@ -34,7 +34,7 @@ const QUICK_LINKS = [
   { label: "Horarios", href: "#horarios" },
   { label: "Ministerios", href: "#ministerios" },
   { label: "Ubicación", href: "#visitanos" },
-  { label: "Avisos", href: "/avisos" },
+  { label: "Entrar", href: "/login" },
 ]
 
 const RESOURCES = [

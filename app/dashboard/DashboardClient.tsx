@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Cake, Construction, Home, User } from "lucide-react"
+import { Cake, Construction, Home, LibraryBig, User } from "lucide-react"
 import { canAccessBirthdays, type AppRole } from "@/lib/roles"
 
 export default function DashboardPage({ role }: { role: AppRole | null }) {
@@ -24,6 +24,14 @@ export default function DashboardPage({ role }: { role: AppRole | null }) {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+          <Link
+            href="/capsulas/educativas"
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-amber-500 text-white dark:bg-amber-400 dark:text-black"
+          >
+            <LibraryBig size={18} />
+            Cápsulas educativas
+          </Link>
+
           <Link
             href="/"
             className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-black text-white dark:bg-white dark:text-black"

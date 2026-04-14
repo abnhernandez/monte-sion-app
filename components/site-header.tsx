@@ -11,8 +11,7 @@ const NAV_ITEMS = [
   { label: "Horarios", href: "#horarios" },
   { label: "Ministerios", href: "#ministerios" },
   { label: "Ubicación", href: "#visitanos" },
-  { label: "FAQ", href: "#faq" },
-  { label: "Avisos", href: "/avisos" },
+  { label: "Entrar", href: "/login" },
 ]
 
 export function SiteHeader() {
