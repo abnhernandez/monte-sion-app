@@ -5,6 +5,10 @@ import { markCampRegistrationCheckedIn } from "@/lib/camp/repository"
 import { buildFullName, extractTicketIdFromQrPayload } from "@/lib/camp/utils"
 import { createCampRegistration } from "@/lib/camp/repository"
 import { buildCampTicketViewModel } from "@/lib/camp/ticket"
+import {
+  CAMP_REGISTRATION_CLOSED_MESSAGE,
+  CAMP_REGISTRATION_OPEN,
+} from "@/lib/camp/constants"
 import { normalizeCampRegistration } from "@/lib/camp/utils"
 import { campRegistrationSchema } from "@/lib/validation"
 import { sendCampConfirmationEmail } from "@/lib/camp/email"
@@ -30,6 +34,13 @@ export async function registerCampParticipant(
   values: CampRegistrationFormValues
 ): Promise<CampRegistrationResponse> {
   try {
+    if (!CAMP_REGISTRATION_OPEN) {
+      return {
+        success: false,
+        message: CAMP_REGISTRATION_CLOSED_MESSAGE,
+      }
+    }
+
     const validation = campRegistrationSchema.safeParse(values)
 
     if (!validation.success) {

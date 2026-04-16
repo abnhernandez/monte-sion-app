@@ -20,10 +20,24 @@ export type ServerQueryParamValue = string | string[] | undefined
 
 export type ServerQueryParams = Record<string, ServerQueryParamValue>
 
-export async function getServerQueryParams(searchParams: ServerQueryParams): Promise<QueryParamsMap> {
+type SearchParamsInput =
+  | ServerQueryParams
+  | URLSearchParams
+  | Promise<ServerQueryParams | URLSearchParams>
+
+export async function getServerQueryParams(searchParams: SearchParamsInput): Promise<QueryParamsMap> {
+  const resolved = await searchParams
   const flattened: Record<string, string | number | boolean | null | undefined> = {}
 
-  for (const [key, value] of Object.entries(searchParams)) {
+  if (resolved instanceof URLSearchParams) {
+    for (const [key, value] of resolved.entries()) {
+      flattened[key] = value
+    }
+
+    return readQueryParamsFromObject(flattened)
+  }
+
+  for (const [key, value] of Object.entries(resolved)) {
     if (Array.isArray(value)) {
       flattened[key] = value[0]
       continue

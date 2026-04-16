@@ -43,6 +43,10 @@ export const CAMP_PAGE_CONTENT = {
     "Nombre, apellidos, iglesia y teléfono. Nada más.",
 } as const;
 
+export const CAMP_REGISTRATION_OPEN = false;
+export const CAMP_REGISTRATION_CLOSED_MESSAGE =
+  "El registro para Campamento Monte Sion 2026 ya fue cerrado.";
+
 export const CAMP_DETAIL_CARDS = [
   {
     title: "Fechas",

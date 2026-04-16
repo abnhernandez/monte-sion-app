@@ -1,6 +1,6 @@
 import React from "react"
 import type { Metadata, Viewport } from "next"
-import { Inter, Geist_Mono } from "next/font/google"
+import { Inter, Geist_Mono, Source_Serif_4 } from "next/font/google"
 import Script from "next/script"
 import { Analytics } from "@vercel/analytics/next"
 import Providers from "./providers"
@@ -15,6 +15,12 @@ const inter = Inter({
 const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
+  display: "swap",
+})
+
+const sourceSerif = Source_Serif_4({
+  subsets: ["latin"],
+  variable: "--font-serif",
   display: "swap",
 })
 
@@ -64,7 +70,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="es" className={`${inter.variable} ${geistMono.variable}`} suppressHydrationWarning>
+    <html lang="es" className={`${inter.variable} ${geistMono.variable} ${sourceSerif.variable}`} suppressHydrationWarning>
       <body className="min-h-screen font-sans">
         <Script id="system-theme" strategy="beforeInteractive">
           {`(() => {
