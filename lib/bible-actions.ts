@@ -11,6 +11,23 @@ export interface Versiculo {
   referencia?: string
 }
 
+export interface VersiculoProgress {
+  user_id: string
+  current_verse_id: number | null
+  difficulty: number
+  practice_mode: boolean
+  exam_mode: boolean
+  exam_duration_seconds: number
+  best_exam_score: number | null
+  last_score: number | null
+  updated_at?: string
+}
+
+export interface VersiculoProgressState {
+  isAuthenticated: boolean
+  progress: VersiculoProgress | null
+}
+
 export interface BibleCatalog {
   books: string[]
   chaptersByBook: Record<string, number[]>
@@ -28,6 +45,10 @@ export interface BiblePassageResult {
   versionId?: string
   versionName?: string
   notes?: string[]
+  verses?: Array<{
+    number: number
+    text: string
+  }>
 }
 
 const LICENSED_SPANISH_BIBLE_FALLBACK: BibleVersion[] = [
@@ -388,6 +409,63 @@ export async function getVersiculos(): Promise<Versiculo[]> {
 
   return data || []
 }
+
+export async function getVersiculoProgressState(): Promise<VersiculoProgressState> {
+  const supabase = await getSupabaseServer()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { isAuthenticated: false, progress: null }
+  }
+
+  const { data, error } = await supabase
+    .from("versiculo_progress")
+    .select("user_id, current_verse_id, difficulty, practice_mode, exam_mode, exam_duration_seconds, best_exam_score, last_score, updated_at")
+    .eq("user_id", user.id)
+    .maybeSingle()
+
+  if (error) {
+    return { isAuthenticated: true, progress: null }
+  }
+
+  return {
+    isAuthenticated: true,
+    progress: (data as VersiculoProgress | null) ?? null,
+  }
+}
+
+export async function saveVersiculoProgress(
+  input: Omit<VersiculoProgress, "user_id" | "updated_at">
+): Promise<boolean> {
+  const supabase = await getSupabaseServer()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return false
+  }
+
+  const payload = {
+    user_id: user.id,
+    current_verse_id: input.current_verse_id,
+    difficulty: input.difficulty,
+    practice_mode: input.practice_mode,
+    exam_mode: input.exam_mode,
+    exam_duration_seconds: input.exam_duration_seconds,
+    best_exam_score: input.best_exam_score,
+    last_score: input.last_score,
+    updated_at: new Date().toISOString(),
+  }
+
+  const { error } = await supabase
+    .from("versiculo_progress")
+    .upsert(payload, { onConflict: "user_id" })
+
+  return !error
+}
  
 export async function getRandomVersiculo(): Promise<Versiculo | null> {
   const supabase = await getSupabaseServer()
@@ -525,9 +603,97 @@ export async function getBiblePassage({
       return []
     }
 
+    const extractVerseSegments = (
+      value: unknown
+    ): Array<{ number: string; text: string }> => {
+      if (Array.isArray(value)) {
+        return value.flatMap(extractVerseSegments)
+      }
+
+      if (!value || typeof value !== "object") {
+        return []
+      }
+
+      const record = value as Record<string, unknown>
+      const numberSource =
+        record.number ??
+        record.verse_number ??
+        record.verseNumber ??
+        record.verse ??
+        record.verse_no ??
+        record.verseNo
+      const textSource =
+        record.text ??
+        record.content ??
+        record.body ??
+        record.value ??
+        record.label
+
+      if (numberSource !== undefined && textSource !== undefined) {
+        const number = String(numberSource).trim()
+        const verseText =
+          typeof textSource === "string" ? stripHtml(textSource) : extractText(textSource).join(" ").trim()
+
+        if (number && verseText) {
+          return [{ number, text: verseText }]
+        }
+      }
+
+      return Object.values(record).flatMap(extractVerseSegments)
+    }
+
+    const extractVerseSegmentsFromText = (
+      value: unknown
+    ): Array<{ number: string; text: string }> => {
+      if (typeof value !== "string") {
+        return []
+      }
+
+      const normalized = stripHtml(value).replace(/\s+/g, " ").trim()
+      if (!normalized) {
+        return []
+      }
+
+      const markers = Array.from(normalized.matchAll(/(?:^|\s)(\d{1,3})(?=\s)/g))
+      if (markers.length === 0) {
+        return []
+      }
+
+      return markers
+        .map((current, index) => {
+          const next = markers[index + 1]
+          const verseNumber = current[1]
+          const start = (current.index ?? 0) + current[0].length
+          const end = next?.index ?? normalized.length
+          const text = normalized.slice(start, end).trim()
+
+          return text ? { number: verseNumber, text } : null
+        })
+        .filter((value): value is { number: string; text: string } => Boolean(value))
+    }
+
     const rawContent = data?.data?.content ?? data?.content ?? data
     const extracted = extractText(rawContent)
-    const text = extracted.join("\n\n").trim()
+    const extractedText = extracted.join("\n\n").trim()
+
+    const verseSegments = [
+      ...extractVerseSegments(data?.data?.verses ?? data?.verses ?? data?.data?.items ?? data?.items ?? null),
+      ...extractVerseSegmentsFromText(rawContent),
+      ...extractVerseSegmentsFromText(extractedText),
+    ]
+      .filter((verse, index, list) =>
+        index === list.findIndex((candidate) => candidate.number === verse.number && candidate.text === verse.text)
+      )
+
+    const text = verseSegments.length > 0
+      ? verseSegments.map((verse: { number: string; text: string }) => `${verse.number} ${verse.text}`).join("\n\n")
+      : extracted.join("\n\n").trim()
+    const verses = verseSegments.length > 0
+      ? verseSegments.map((verse: { number: string; text: string }) => ({
+          number: Number.parseInt(verse.number, 10),
+          text: verse.text,
+        }))
+      : undefined
 
     const rawNotes =
       data?.data?.notes ??
@@ -562,6 +728,7 @@ export async function getBiblePassage({
       versionId,
       versionName: versionName || undefined,
       notes: notes.length > 0 ? notes : undefined,
+      verses,
     }
   } catch (error) {
     console.error("YouVersion fetch failed:", error)
@@ -570,5 +737,204 @@ export async function getBiblePassage({
       text: "No se pudo cargar el pasaje",
       versionId: bibleId,
     }
+  }
+}
+
+// ==================== FUNCIONES PARA EXAMEN ====================
+
+type ParsedVerseReference = {
+  book: string
+  chapter: number
+  verseStart: number
+  chapterEnd: number
+  verseEnd: number
+}
+
+function parseVerseReference(reference: string): ParsedVerseReference | null {
+  // Formato esperado: "Mateo 3:16", "Colosenses 1:9-10", "Juan 3:16-18", "1 Corintios 13:1-3".
+  const normalized = reference.replace(/\s+/g, " ").trim()
+  const match = normalized.match(/^(.+?)\s+(\d+):(\d+)(?:-(?:(\d+):)?(\d+))?$/)
+
+  if (!match) {
+    console.warn(`No se pudo parsear la referencia: ${reference}`)
+    return null
+  }
+
+  const chapter = Number.parseInt(match[2], 10)
+  const verseStart = Number.parseInt(match[3], 10)
+  const chapterEnd = Number.parseInt(match[4] ?? match[2], 10)
+  const verseEnd = Number.parseInt(match[5] ?? match[3], 10)
+
+  return {
+    book: match[1].trim(),
+    chapter,
+    verseStart,
+    chapterEnd,
+    verseEnd,
+  }
+}
+
+function convertBookToYouVersionCode(book: string): string | null {
+  // Mapeo de nombres de libros al código de YouVersion
+  const bookMap: Record<string, string> = {
+    "génesis": "GEN",
+    "éxodo": "EXO",
+    "levítico": "LEV",
+    "números": "NUM",
+    "deuteronomio": "DEU",
+    "josué": "JOS",
+    "jueces": "JDG",
+    "rut": "RUT",
+    "1 samuel": "1SA",
+    "2 samuel": "2SA",
+    "1 reyes": "1KI",
+    "2 reyes": "2KI",
+    "1 crónicas": "1CH",
+    "2 crónicas": "2CH",
+    "esdras": "EZR",
+    "nehemías": "NEH",
+    "ester": "EST",
+    "job": "JOB",
+    "salmos": "PSA",
+    "proverbios": "PRO",
+    "eclesiastés": "ECC",
+    "cantares": "SNG",
+    "isaías": "ISA",
+    "jeremías": "JER",
+    "lamentaciones": "LAM",
+    "ezequiel": "EZK",
+    "daniel": "DAN",
+    "oseas": "HOS",
+    "joel": "JOL",
+    "amós": "AMO",
+    "abdías": "OBA",
+    "jonás": "JON",
+    "miqueas": "MIC",
+    "nahúm": "NAM",
+    "habacuc": "HAB",
+    "sofonías": "ZEP",
+    "hageo": "HAG",
+    "zacarías": "ZEC",
+    "malaquías": "MAL",
+    "mateo": "MAT",
+    "marcos": "MRK",
+    "lucas": "LUK",
+    "juan": "JHN",
+    "hechos": "ACT",
+    "romanos": "ROM",
+    "1 corintios": "1CO",
+    "2 corintios": "2CO",
+    "gálatas": "GAL",
+    "efesios": "EPH",
+    "filipenses": "PHP",
+    "colosenses": "COL",
+    "1 tesalonicenses": "1TH",
+    "2 tesalonicenses": "2TH",
+    "1 timoteo": "1TI",
+    "2 timoteo": "2TI",
+    "tito": "TIT",
+    "filemón": "PHM",
+    "hebreos": "HEB",
+    "santiago": "JAS",
+    "1 pedro": "1PE",
+    "2 pedro": "2PE",
+    "1 juan": "1JN",
+    "2 juan": "2JN",
+    "3 juan": "3JN",
+    "judas": "JUD",
+    "apocalipsis": "REV",
+  }
+
+  const normalized = book
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+
+  return bookMap[normalized] || null
+}
+
+function buildYouVersionPassage(book: string, chapter: number, verse: number): string {
+  const code = convertBookToYouVersionCode(book)
+  if (!code) {
+    console.warn(`No se encontró código de YouVersion para: ${book}`)
+    return ""
+  }
+  return `${code}.${chapter}.${verse}`
+}
+
+function buildYouVersionPassageRange(
+  book: string,
+  chapter: number,
+  verseStart: number,
+  chapterEnd: number,
+  verseEnd: number
+): string {
+  const code = convertBookToYouVersionCode(book)
+  if (!code) {
+    console.warn(`No se encontró código de YouVersion para: ${book}`)
+    return ""
+  }
+
+  if (chapter === chapterEnd) {
+    return verseStart === verseEnd
+      ? `${code}.${chapter}.${verseStart}`
+      : `${code}.${chapter}.${verseStart}-${verseEnd}`
+  }
+
+  return `${code}.${chapter}.${verseStart}-${code}.${chapterEnd}.${verseEnd}`
+}
+
+export async function getVerseFromReference(
+  reference: string,
+  bibleId: string = "1637"
+): Promise<BiblePassageResult> {
+  // Primero intenta obtener de la DB local
+  const parsed = parseVerseReference(reference)
+  
+  if (parsed) {
+    const { book, chapter, verseStart, chapterEnd, verseEnd } = parsed
+    
+    const supabase = await getSupabaseServer()
+    const query = supabase
+      .from("versiculos")
+      .select("id, libro, capitulo, versiculo, texto, referencia")
+      .ilike("libro", book)
+
+    const { data: localVerses, error } = chapter === chapterEnd
+      ? await query
+          .eq("capitulo", chapter)
+          .gte("versiculo", verseStart)
+          .lte("versiculo", verseEnd)
+          .order("versiculo", { ascending: true })
+      : await query
+          .gte("capitulo", chapter)
+          .lte("capitulo", chapterEnd)
+          .order("capitulo", { ascending: true })
+          .order("versiculo", { ascending: true })
+
+    if (!error && localVerses && localVerses.length > 0) {
+      const text = localVerses
+        .map((verseRow) => `${verseRow.versiculo} ${verseRow.texto}`)
+        .join("\n")
+
+      return {
+        reference: localVerses[0].referencia || reference,
+        text,
+        versionId: "local",
+        versionName: "Base de Datos Local",
+      }
+    }
+
+    // Si no encuentra en DB, intenta con YouVersion API
+    const passage = buildYouVersionPassageRange(book, chapter, verseStart, chapterEnd, verseEnd)
+    if (passage) {
+      return getBiblePassage({ bibleId, passage })
+    }
+  }
+
+  return {
+    reference: "Error",
+    text: "No se pudo cargar el versículo",
+    versionId: bibleId,
   }
 }

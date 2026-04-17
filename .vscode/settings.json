@@ -1,3 +1,26 @@
 {
-  "css.lint.unknownAtRules": "ignore"
+  "css.lint.unknownAtRules": "ignore",
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.preferences.preferTypeOnlyImports": false,
+  "typescript.defaultSfcLanguages": {
+    "vue": "vue",
+    "svelte": "svelte"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": false
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": false
+  },
+  "files.exclude": {
+    "**/.next": true,
+    "**/.swc": true
+  },
+  "search.exclude": {
+    "**/.next": true,
+    "node_modules": true
+  }
 }

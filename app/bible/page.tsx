@@ -1,9 +1,10 @@
 import Link from "next/link"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { getBibleCatalog, getBibleChapterVerses, getBiblePassage, getBibleVersions } from "@/lib/bible-actions"
+import { getBibleCatalog, getBibleChapterVerses, getBiblePassage, getBibleVersions, type BibleVersion } from "@/lib/bible-actions"
 import { formatBibleVersionLabel } from "@/lib/bible-version-labels"
 import { BibleControls } from "./bible-controls"
-import { VerseBlock } from "./verse-block.tsx"
+import { Verse } from "./verse-block.tsx"
+import { parseBibleVerses } from "./verse-parser"
 
 type BiblePageProps = {
   searchParams?:
@@ -144,11 +145,6 @@ function getPassageCodeFromBook(book: string): string | null {
   return entry?.[0] ?? null
 }
 
-type ParsedFallbackVerse = {
-  verseNumber: string
-  text: string
-}
-
 function hasLikelyCompleteChapter(verses: Array<{ versiculo: number }>): boolean {
   if (verses.length === 0) {
     return false
@@ -172,38 +168,6 @@ function hasLikelyCompleteChapter(verses: Array<{ versiculo: number }>): boolean
   return true
 }
 
-function parseFallbackVerses(rawText: string): ParsedFallbackVerse[] {
-  const normalized = rawText.replace(/\s+/g, " ").trim()
-  if (!normalized) {
-    return []
-  }
-
-  const markerRegex = /(?:^|\s)(\d{1,3})\s+/g
-  const markers = Array.from(normalized.matchAll(markerRegex))
-
-  if (markers.length === 0) {
-    return []
-  }
-
-  const verses: ParsedFallbackVerse[] = []
-
-  for (let i = 0; i < markers.length; i += 1) {
-    const current = markers[i]
-    const next = markers[i + 1]
-
-    const verseNumber = current[1]
-    const start = (current.index ?? 0) + current[0].length
-    const end = next?.index ?? normalized.length
-    const text = normalized.slice(start, end).trim()
-
-    if (text) {
-      verses.push({ verseNumber, text })
-    }
-  }
-
-  return verses
-}
-
 function normalizeVersionName(value: string): string {
   return value
     .toLowerCase()
@@ -224,11 +188,161 @@ function isRvr1960Version(name: string): boolean {
   )
 }
 
+type ChapterReading = {
+  versionId: string
+  versionName: string
+  versionLabel: string
+  reference: string
+  verses: Array<{ number: string | number; text: string }>
+  notes?: string[]
+}
+
+async function resolveChapterReading({
+  book,
+  chapter,
+  versionId,
+  versionName,
+}: {
+  book: string
+  chapter: number
+  versionId: string
+  versionName: string
+}): Promise<ChapterReading> {
+  const versionLabel = formatBibleVersionLabel({ id: versionId, name: versionName })
+  const fallbackCode = getPassageCodeFromBook(book)
+
+  const useLocalVerses = isRvr1960Version(versionName)
+  const localVerses = useLocalVerses ? await getBibleChapterVerses(book, chapter) : []
+  const canUseLocalVerses = useLocalVerses && hasLikelyCompleteChapter(localVerses)
+
+  if (canUseLocalVerses) {
+    return {
+      versionId,
+      versionName,
+      versionLabel,
+      reference: `${book} ${chapter}`,
+      verses: localVerses.map((verse) => ({
+        number: verse.versiculo,
+        text: verse.texto,
+      })),
+    }
+  }
+
+  if (!fallbackCode) {
+    return {
+      versionId,
+      versionName,
+      versionLabel,
+      reference: `${book} ${chapter}`,
+      verses: [],
+    }
+  }
+
+  const passage = `${fallbackCode}.${chapter}`
+  const fallbackData = await getBiblePassage({ bibleId: versionId, passage })
+  const verses = fallbackData.verses?.length
+    ? fallbackData.verses.map((verse) => ({
+        number: verse.number,
+        text: verse.text,
+      }))
+    : fallbackData.text
+      ? parseBibleVerses(fallbackData.text).map((verse) => ({
+          number: verse.number,
+          text: verse.text,
+        }))
+      : []
+
+  return {
+    versionId,
+    versionName,
+    versionLabel,
+    reference: fallbackData.reference ?? `${book} ${chapter}`,
+    verses,
+    notes: fallbackData.notes,
+  }
+}
+
+function ChapterReadingView({
+  reading,
+  book,
+  chapter,
+  selectedVersionLabel,
+  verseSizeClassName,
+  verseFontClassName,
+  versions,
+  selectedVersionId,
+}: {
+  reading: ChapterReading
+  book: string
+  chapter: number
+  selectedVersionLabel: string
+  verseSizeClassName: string
+  verseFontClassName: string
+  versions: BibleVersion[]
+  selectedVersionId: string
+}) {
+  const passageCode = getPassageCodeFromBook(book)
+  const selectionGroupId = `${reading.versionId}:${book}:${chapter}`
+
+  return (
+    <article className="space-y-6">
+      <div className="space-y-2 text-center">
+        <p className="text-sm font-semibold tracking-[0.16em] text-black/60 uppercase dark:text-white/60">
+          {reading.versionLabel}
+        </p>
+        <p className="text-sm text-black/45 dark:text-white/45">{reading.versionName}</p>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <h2 className="mb-4 text-xl font-semibold text-black dark:text-white">{book} {chapter}</h2>
+          <div className="space-y-3">
+            {reading.verses.map((verse, index) => (
+              <Verse
+                key={`${reading.versionId}-${verse.number}-${index}`}
+                number={verse.number}
+                text={verse.text}
+                sizeClassName={verseSizeClassName}
+                fontClassName={verseFontClassName}
+                referenceLabel={`${book} ${chapter}:${verse.number} ${selectedVersionLabel}`}
+                storageKey={`${book}:${chapter}:${verse.number}:${reading.versionId}`}
+                selectionGroupId={selectionGroupId}
+                selectionSortOrder={index}
+                comparePassage={passageCode ? `${passageCode}.${chapter}.${verse.number}` : undefined}
+                compareBibleId={reading.versionId}
+                compareVersions={versions}
+              />
+            ))}
+          </div>
+        </div>
+
+        {reading.notes && reading.notes.length > 0 ? (
+          <aside className="rounded-xl border border-black/10 bg-white/70 p-4 dark:border-white/10 dark:bg-neutral-900/70">
+            <h3 className="mb-2 text-xs font-semibold tracking-[0.14em] text-black/60 uppercase dark:text-white/60">
+              Notas
+            </h3>
+            <ul className="space-y-1.5 text-sm leading-relaxed text-black/75 dark:text-white/75">
+              {reading.notes.map((note, index) => (
+                <li key={`${reading.versionId}-note-${index}`}>
+                  <span className="mr-1 text-xs font-semibold text-black/60 dark:text-white/60">[{index + 1}]</span>
+                  {note}
+                </li>
+              ))}
+            </ul>
+          </aside>
+        ) : null}
+      </div>
+    </article>
+  )
+}
+
 export default async function BibliaPage({ searchParams }: BiblePageProps) {
   const resolvedSearchParams = (await searchParams) ?? {}
   const selectedBookParam = readStringParam(resolvedSearchParams.book)
   const selectedChapterParam = Number(readStringParam(resolvedSearchParams.chapter))
   const selectedVersionParam = readStringParam(resolvedSearchParams.version)
+  const selectedParallelVersionParam = readStringParam(resolvedSearchParams.parallelVersion)
+  const isParallelMode = readStringParam(resolvedSearchParams.parallel) === "1" || readStringParam(resolvedSearchParams.parallel) === "true"
   const selectedTextSizeParam = readStringParam(resolvedSearchParams.textSize)
   const selectedTextFontParam = readStringParam(resolvedSearchParams.textFont)
   const legacyPassageParam = readStringParam(resolvedSearchParams.passage)
@@ -287,16 +401,54 @@ export default async function BibliaPage({ searchParams }: BiblePageProps) {
     chapters.find((ch) => ch === parsedLegacy.chapter) ??
     chapters[0]
 
-  const useLocalVerses = isRvr1960Version(selectedVersionName)
-  const localVerses = useLocalVerses ? await getBibleChapterVerses(selectedBook, selectedChapter) : []
-  const canUseLocalVerses = useLocalVerses && hasLikelyCompleteChapter(localVerses)
-  const fallbackCode = getPassageCodeFromBook(selectedBook)
-  const fallbackPassage = fallbackCode ? `${fallbackCode}.${selectedChapter}` : null
-  const fallbackData = !canUseLocalVerses && fallbackPassage
-    ? await getBiblePassage({ bibleId: selectedVersionId, passage: fallbackPassage })
-    : null
-  const verses = canUseLocalVerses ? localVerses : []
-  const parsedFallbackVerses = fallbackData?.text ? parseFallbackVerses(fallbackData.text) : []
+  const parallelVersionCandidate =
+    selectedParallelVersionParam && versions.some((version) => version.id === selectedParallelVersionParam && version.id !== selectedVersionId)
+      ? versions.find((version) => version.id === selectedParallelVersionParam)
+      : versions.find((version) => version.id !== selectedVersionId) ?? versions[0]
+  const selectedParallelVersionId = isParallelMode ? (parallelVersionCandidate?.id ?? selectedVersionId) : ""
+  const selectedParallelVersionName = isParallelMode
+    ? (parallelVersionCandidate?.name ?? selectedVersionName)
+    : ""
+
+  const [mainReading, parallelReading] = await Promise.all([
+    resolveChapterReading({
+      book: selectedBook,
+      chapter: selectedChapter,
+      versionId: selectedVersionId,
+      versionName: selectedVersionName,
+    }),
+    isParallelMode
+      ? resolveChapterReading({
+          book: selectedBook,
+          chapter: selectedChapter,
+          versionId: selectedParallelVersionId,
+          versionName: selectedParallelVersionName,
+        })
+      : Promise.resolve(null),
+  ])
+
+  const buildChapterHref = (chapter: number) => {
+    const params = new URLSearchParams()
+
+    params.set("book", selectedBook)
+    params.set("chapter", String(chapter))
+    params.set("version", selectedVersionId)
+
+    if (selectedTextSize !== "md") {
+      params.set("textSize", selectedTextSize)
+    }
+
+    if (selectedTextFont !== "serif") {
+      params.set("textFont", selectedTextFont)
+    }
+
+    if (isParallelMode) {
+      params.set("parallel", "1")
+      params.set("parallelVersion", selectedParallelVersionId || parallelVersionCandidate?.id || selectedVersionId)
+    }
+
+    return `/bible?${params.toString()}`
+  }
 
   const chapterIndex = getChapterIndex(chapters, selectedChapter)
   const previousChapter = chapters[chapterIndex - 1]
@@ -314,7 +466,10 @@ export default async function BibliaPage({ searchParams }: BiblePageProps) {
               selectedBook={selectedBook}
               selectedChapter={selectedChapter}
               selectedVersionId={selectedVersionId}
-              selectedVersionName={selectedVersionLabel}
+              selectedVersionName={selectedVersionName}
+              isParallelMode={isParallelMode}
+              parallelVersionId={selectedParallelVersionId}
+              parallelVersionName={selectedParallelVersionName}
               selectedTextSize={selectedTextSize}
               selectedTextFont={selectedTextFont}
               previousChapter={previousChapter}
@@ -326,7 +481,7 @@ export default async function BibliaPage({ searchParams }: BiblePageProps) {
         <div className="relative mx-auto mt-10 w-full max-w-5xl pb-16">
           {previousChapter ? (
             <Link
-              href={`/bible?book=${encodeURIComponent(selectedBook)}&chapter=${previousChapter}&version=${selectedVersionId}`}
+              href={buildChapterHref(previousChapter)}
               className="absolute left-0 top-1/2 -translate-x-6 -translate-y-1/2 hidden h-12 w-12 items-center justify-center rounded-full border border-black/15 bg-white/90 text-black/60 shadow-sm hover:text-black sm:inline-flex dark:border-white/15 dark:bg-neutral-900/90 dark:text-white/70"
               aria-label="Capítulo anterior"
             >
@@ -336,7 +491,7 @@ export default async function BibliaPage({ searchParams }: BiblePageProps) {
 
           {nextChapter ? (
             <Link
-              href={`/bible?book=${encodeURIComponent(selectedBook)}&chapter=${nextChapter}&version=${selectedVersionId}`}
+              href={buildChapterHref(nextChapter)}
               className="absolute right-0 top-1/2 translate-x-6 -translate-y-1/2 hidden h-12 w-12 items-center justify-center rounded-full border border-black/15 bg-white/90 text-black/60 shadow-sm hover:text-black sm:inline-flex dark:border-white/15 dark:bg-neutral-900/90 dark:text-white/70"
               aria-label="Capítulo siguiente"
             >
@@ -354,7 +509,7 @@ export default async function BibliaPage({ searchParams }: BiblePageProps) {
             <div className="mb-8 flex flex-wrap justify-center gap-2 sm:hidden">
               {previousChapter ? (
                 <Link
-                  href={`/bible?book=${encodeURIComponent(selectedBook)}&chapter=${previousChapter}&version=${selectedVersionId}`}
+                  href={buildChapterHref(previousChapter)}
                   className="inline-flex items-center gap-1 rounded-md border border-black/15 px-3 py-1.5 text-sm dark:border-white/15"
                 >
                   <ChevronLeft className="h-4 w-4" /> Anterior
@@ -362,7 +517,7 @@ export default async function BibliaPage({ searchParams }: BiblePageProps) {
               ) : null}
               {nextChapter ? (
                 <Link
-                  href={`/bible?book=${encodeURIComponent(selectedBook)}&chapter=${nextChapter}&version=${selectedVersionId}`}
+                  href={buildChapterHref(nextChapter)}
                   className="inline-flex items-center gap-1 rounded-md border border-black/15 px-3 py-1.5 text-sm dark:border-white/15"
                 >
                   Siguiente <ChevronRight className="h-4 w-4" />
@@ -371,58 +526,41 @@ export default async function BibliaPage({ searchParams }: BiblePageProps) {
             </div>
 
             <div data-bible-reading>
-              {verses.length > 0 ? (
-                <div>
-                  {verses.map((verse) => (
-                    <VerseBlock
-                      key={verse.id}
-                      number={verse.versiculo}
-                      text={verse.texto}
-                      sizeClassName={verseSizeClassName}
-                      fontClassName={verseFontClassName}
-                      referenceLabel={`${selectedBook} ${selectedChapter}:${verse.versiculo} ${selectedVersionLabel}`}
-                    />
-                  ))}
+              {isParallelMode && parallelReading ? (
+                <div className="grid gap-10 lg:grid-cols-2">
+                  <ChapterReadingView
+                    reading={mainReading}
+                    book={selectedBook}
+                    chapter={selectedChapter}
+                    selectedVersionLabel={selectedVersionLabel}
+                    verseSizeClassName={verseSizeClassName}
+                    verseFontClassName={verseFontClassName}
+                    versions={versions}
+                    selectedVersionId={selectedVersionId}
+                  />
+
+                  <ChapterReadingView
+                    reading={parallelReading}
+                    book={selectedBook}
+                    chapter={selectedChapter}
+                    selectedVersionLabel={selectedParallelVersionName}
+                    verseSizeClassName={verseSizeClassName}
+                    verseFontClassName={verseFontClassName}
+                    versions={versions}
+                    selectedVersionId={selectedParallelVersionId}
+                  />
                 </div>
-              ) : fallbackData?.text ? (
-                <div className="space-y-3">
-                  <p className="text-center text-xs uppercase tracking-[0.12em] text-black/55 dark:text-white/55">
-                    {fallbackData.reference}
-                  </p>
-                  {parsedFallbackVerses.length > 0 ? (
-                    <div>
-                      {parsedFallbackVerses.map((verse, index) => (
-                        <VerseBlock
-                          key={`${verse.verseNumber}-${index}`}
-                          number={verse.verseNumber}
-                          text={verse.text}
-                          sizeClassName={verseSizeClassName}
-                          fontClassName={verseFontClassName}
-                          referenceLabel={`${selectedBook} ${selectedChapter}:${verse.verseNumber} ${selectedVersionLabel}`}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <p className={`whitespace-pre-wrap leading-[1.75] text-black/90 dark:text-white/90 ${verseSizeClassName} ${verseFontClassName}`}>
-                      {fallbackData.text}
-                    </p>
-                  )}
-                  {fallbackData.notes && fallbackData.notes.length > 0 ? (
-                    <aside className="mt-8 rounded-xl border border-black/10 bg-white/70 p-4 dark:border-white/10 dark:bg-neutral-900/70">
-                      <h2 className="mb-2 text-xs font-semibold tracking-[0.14em] text-black/60 uppercase dark:text-white/60">
-                        Notas
-                      </h2>
-                      <ul className="space-y-1.5 text-sm leading-relaxed text-black/75 dark:text-white/75">
-                        {fallbackData.notes.map((note, index) => (
-                          <li key={`note-${index}`}>
-                            <span className="mr-1 text-xs font-semibold text-black/60 dark:text-white/60">[{index + 1}]</span>
-                            {note}
-                          </li>
-                        ))}
-                      </ul>
-                    </aside>
-                  ) : null}
-                </div>
+              ) : mainReading.verses.length > 0 ? (
+                <ChapterReadingView
+                  reading={mainReading}
+                  book={selectedBook}
+                  chapter={selectedChapter}
+                  selectedVersionLabel={selectedVersionLabel}
+                  verseSizeClassName={verseSizeClassName}
+                  verseFontClassName={verseFontClassName}
+                  versions={versions}
+                  selectedVersionId={selectedVersionId}
+                />
               ) : (
                 <p className="text-center text-sm text-black/60 dark:text-white/60">
                   No hay versículos cargados para este capítulo.

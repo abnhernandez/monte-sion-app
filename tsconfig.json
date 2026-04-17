@@ -25,10 +25,17 @@
     ],
     "paths": {
       "@/*": [
-        "./*"
+        "./*",
+        "./app/*",
+        "./components/*",
+        "./lib/*",
+        "./hooks/*",
+        "./types/*",
+        "./utils/*"
       ]
     },
     "types": [
+      "node",
       "jest",
       "@testing-library/jest-dom"
     ]

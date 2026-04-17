@@ -57,6 +57,9 @@ type BibleControlsProps = {
   selectedChapter: number
   selectedVersionId: string
   selectedVersionName: string
+  isParallelMode?: boolean
+  parallelVersionId?: string
+  parallelVersionName?: string
   selectedTextSize: string
   selectedTextFont: string
   previousChapter?: number
@@ -83,6 +86,9 @@ export function BibleControls({
   selectedChapter,
   selectedVersionId,
   selectedVersionName,
+  isParallelMode = false,
+  parallelVersionId = "",
+  parallelVersionName = "",
   selectedTextSize,
   selectedTextFont,
   previousChapter,
@@ -93,12 +99,19 @@ export function BibleControls({
   const searchParams = useSearchParams()
   const rootRef = useRef<HTMLDivElement>(null)
   const closeTimerRef = useRef<number | null>(null)
-  const [openMenu, setOpenMenu] = useState<"book" | "chapter" | "version" | "reader" | null>(null)
+  const [openMenu, setOpenMenu] = useState<"book" | "chapter" | "version" | "parallel" | "reader" | null>(null)
 
   const selectedVersionLabel =
     formatBibleVersionLabel(versions.find((version) => version.id === selectedVersionId) ?? { id: selectedVersionId, name: selectedVersionName })
+  const selectedParallelVersionLabel =
+    formatBibleVersionLabel(versions.find((version) => version.id === parallelVersionId) ?? { id: parallelVersionId, name: parallelVersionName })
 
   const chapterOptions = useMemo(() => chapters, [chapters])
+  const parallelVersionOptions = useMemo(
+    () => versions.filter((version) => version.id !== selectedVersionId),
+    [selectedVersionId, versions]
+  )
+  const defaultParallelVersionId = parallelVersionOptions[0]?.id ?? versions[0]?.id ?? selectedVersionId
   const [isSpeaking, setIsSpeaking] = useState(false)
 
   useEffect(() => {
@@ -168,7 +181,7 @@ export function BibleControls({
     }
   }
 
-  const pushWith = (next: { book?: string; chapter?: number; version?: string }) => {
+  const pushWith = (next: { book?: string; chapter?: number; version?: string; parallel?: boolean; parallelVersion?: string }) => {
     const params = new URLSearchParams(searchParams.toString())
 
     const book = next.book ?? params.get("book") ?? selectedBook
@@ -176,14 +189,38 @@ export function BibleControls({
     const chapterValue = next.chapter ?? (Number.isFinite(currentChapter) ? currentChapter : 1)
     const chapter = String(chapterValue)
     const version = next.version ?? params.get("version") ?? selectedVersionId
+    const parallel = next.parallel ?? isParallelMode
 
     params.set("book", book)
     params.set("chapter", chapter)
     params.set("version", version)
     params.delete("passage")
 
+    if (parallel) {
+      const currentParallelVersion = params.get("parallelVersion") ?? parallelVersionId ?? defaultParallelVersionId
+      const resolvedParallelVersion = next.parallelVersion ?? currentParallelVersion
+
+      params.set("parallel", "1")
+      params.set("parallelVersion", resolvedParallelVersion === version ? defaultParallelVersionId : resolvedParallelVersion)
+    } else {
+      params.delete("parallel")
+      params.delete("parallelVersion")
+    }
+
     setOpenMenu(null)
     router.push(`${pathname}?${params.toString()}`, { scroll: false })
+  }
+
+  const toggleParallelMode = () => {
+    if (isParallelMode) {
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete("parallel")
+      params.delete("parallelVersion")
+      router.push(`${pathname}?${params.toString()}`, { scroll: false })
+      return
+    }
+
+    pushWith({ parallel: true, parallelVersion: defaultParallelVersionId })
   }
 
   const updateReaderPreference = (next: { textSize?: string; textFont?: string }) => {
@@ -325,6 +362,36 @@ export function BibleControls({
               ))}
             </div>
           </Capsule>
+
+          {isParallelMode ? (
+            <Capsule
+              label="Paralelo"
+              value={selectedParallelVersionLabel}
+              minWidth="min(92vw, 26rem)"
+              isOpen={openMenu === "parallel"}
+              onOpen={() => setOpenMenu("parallel")}
+              onClose={scheduleClose}
+            >
+              <div className="max-h-72 space-y-1 overflow-auto pr-1">
+                {parallelVersionOptions.map((version) => (
+                  <button
+                    key={version.id}
+                    type="button"
+                    onClick={() => pushWith({ parallel: true, parallelVersion: version.id })}
+                    onMouseEnter={cancelClose}
+                    onFocus={cancelClose}
+                    className={`flex w-full items-center justify-between rounded-full px-3 py-2 text-left text-sm transition ${
+                      version.id === parallelVersionId
+                        ? "bg-black text-white dark:bg-white dark:text-black"
+                        : "bg-black/5 text-black/80 hover:bg-black/10 dark:bg-white/5 dark:text-white/80 dark:hover:bg-white/10"
+                    }`}
+                  >
+                    <span className="truncate">{formatBibleVersionLabel(version)}</span>
+                  </button>
+                ))}
+              </div>
+            </Capsule>
+          ) : null}
         </div>
 
         <div className="flex items-center justify-between gap-2 sm:justify-end">
@@ -357,6 +424,23 @@ export function BibleControls({
             title={isSpeaking ? "Detener lectura" : "Leer en voz alta"}
           >
             {isSpeaking ? <Square className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+          </button>
+          <button
+            type="button"
+            onClick={toggleParallelMode}
+            className={`hidden h-9 items-center gap-2 rounded-full border px-3 text-sm font-medium transition-colors sm:inline-flex ${
+              isParallelMode
+                ? "border-[#213c2d] bg-[#213c2d] text-white"
+                : "border-black/10 text-black/70 hover:bg-black/5 dark:border-white/15 dark:text-white/75 dark:hover:bg-white/10"
+            }`}
+            aria-pressed={isParallelMode}
+            aria-label={isParallelMode ? "Salir de modo paralelo" : "Activar modo paralelo"}
+            title={isParallelMode ? "Salir de modo paralelo" : "Activar modo paralelo"}
+          >
+            <span className="inline-flex h-4 w-4 items-center justify-center rounded-sm border border-current/30 text-[8px] leading-none">
+              ∥
+            </span>
+            <span className="hidden sm:inline">Paralelo</span>
           </button>
           <div className="relative">
             <button
